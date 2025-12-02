@@ -20,13 +20,15 @@ VideoProducer::VideoProducer(
         function<void(const uint8_t *data, size_t size)> onSample,
         string inputUrl) :
     sampleHandler(onSample),
-    inputUrl(inputUrl)
+    inputUrl(inputUrl),
+    _do_term(false)
 {
     _videoThread = thread([&] {dummyStreamThr(); });
 }
 
 VideoProducer::~VideoProducer()
 {
+    _do_term = true;
     _videoThread.join();
 }
 
@@ -81,7 +83,7 @@ void VideoProducer::dummyStreamThr()
     bool dumpVideo = false;
 
     /* Encoding loop */
-    while (true) {
+    while (!_do_term) {
         // Generate a dummy frame (color pattern)
         av_frame_make_writable(frame);
         for (int y = 0; y < height; y++)

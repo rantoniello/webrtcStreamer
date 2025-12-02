@@ -2,6 +2,7 @@
  */
 
 #include <thread>
+#include <atomic>
 #include <rtc/rtc.hpp>
 
 using namespace std;
@@ -17,4 +18,5 @@ private:
     function<void (const uint8_t *data, size_t size)> sampleHandler;
     string inputUrl;
     thread _videoThread;
+    atomic_bool _do_term;
 };

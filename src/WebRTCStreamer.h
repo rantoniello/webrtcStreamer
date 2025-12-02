@@ -12,6 +12,7 @@
 #include <cstring>
 #include <rtc/rtc.hpp>
 #include "utils/BlockingQueue.h"
+#include "utils/SafeUMap.h"
 
 using namespace std;
 
@@ -157,7 +158,7 @@ private:
     atomic_bool _do_term; ///< Signals class instance termination
 
     /// Registry of active WebRTC clients indexed by peer ID.
-    unordered_map<string, shared_ptr<Client>> _clientsMap;
+    SafeUMap<string, Client> _clientsMap;
 
     /** @name Streamer global signaling Infrastructure
      *  Elements used to communicate with the external signaling server and

@@ -137,6 +137,8 @@ WebRTCStreamer::Client::~Client()
     _signalingQueueIn.stop();
     _signalingQueueOut.stop();
     _peerConnection->close();
+    _signalingThread.join();
+    cout << "Client '" << _id << "' released" << endl;
 }
 
 void WebRTCStreamer::Client::signalingSet(string& message)
@@ -172,19 +174,24 @@ WebRTCStreamer::WebRTCStreamer(const string& signalingServer) :
         _signalingQueue(256),
         _framesQueueIn(256)
 {
-        // Launch i/o signaling thread
-        _signalingThread = thread([&] {this->_signalingThr(); });
+    // Launch i/o signaling thread
+    _signalingThread = thread([&] {this->_signalingThr(); });
 
-        // Launch multimedia processing thread
-        _multimediaThread = thread([&] {this->_multimediaThr(); });
+    // Launch multimedia processing thread
+    _multimediaThread = thread([&] {this->_multimediaThr(); });
 }
 
 WebRTCStreamer::~WebRTCStreamer()
 {
     _do_term = true;
+
     _signalingQueue.stop();
     _signalingWS->close();
     _signalingThread.join();
+
+    _framesQueueIn.stop();
+    _multimediaThread.join();
+    cout << "WebRTCStreamer released" << _signalingServer << endl;
 }
 
 void WebRTCStreamer::pushData(void *const data, size_t size)
@@ -230,15 +237,13 @@ void WebRTCStreamer::_signalingThr()
 
     thread signalingThreadOut = thread([&] {
         while(!_do_term) {
-            unordered_map<string, shared_ptr<Client>>::iterator it;
-            for (it = _clientsMap.begin(); it != _clientsMap.end(); it++) {
-                shared_ptr<Client> client = it->second;
+            _clientsMap.traverse([&](string id, shared_ptr<Client> client){
                 optional<string> opt_message = client-> signalingGet(
                         (chrono::milliseconds)100);
                 if (opt_message == nullopt)
-                    continue;
+                    return;
                 _signalingQueue.push(opt_message.value());
-            }
+            });
         }
     });
 
@@ -255,11 +260,11 @@ void WebRTCStreamer::_signalingThr()
             _clientsMap.emplace(id, make_shared<WebRTCStreamer::Client>(id, ""));
         } else if (type == "answer") {
             // Push remote peer answer to our client class instance
-            auto it = _clientsMap.find(id);
-            if (it == _clientsMap.end())
+            auto it = _clientsMap.get(id);
+            if (it == nullptr)
                 return;
             string sdp = json_msg["sdp"].get<string>();
-            (it->second)->signalingSet(sdp);
+            it->signalingSet(sdp);
         }
     };
 
@@ -337,12 +342,10 @@ void WebRTCStreamer::_multimediaThr()
         shared_ptr<Frame> frame = optFrame.value();
 
         // Itearte clients instances
-        for (unordered_map<string, shared_ptr<Client>>::iterator it =
-                _clientsMap.begin(); it != _clientsMap.end(); it++) {
-            shared_ptr<Client> client = it->second;
+        _clientsMap.traverse([&](string id, shared_ptr<Client> client){
             client->sendFrame(static_cast<const byte*>(frame->data),
                     frame->size, chrono::duration<double, micro>(
                     frame->sampleTime_usec));
-        }
+        });
     }
 }

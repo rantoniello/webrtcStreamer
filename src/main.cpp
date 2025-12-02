@@ -30,9 +30,10 @@ int main(int argc, char **argv) try
     string localId = "server";
     cout << "The local ID is: " << localId << endl;
 
-    WebRTCStreamer streamer("ws://127.0.0.1:8000/" + localId);
+    std::shared_ptr<WebRTCStreamer> streamer = make_shared<WebRTCStreamer>(
+            "ws://127.0.0.1:8000/" + localId);
     VideoProducer videoSource([&](const uint8_t *data, size_t size) {
-        streamer.pushData((void*const)data, size);
+        streamer->pushData((void*const)data, size);
     });
 
     while (!do_term)

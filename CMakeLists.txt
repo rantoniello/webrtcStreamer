@@ -94,6 +94,7 @@ add_custom_command(
 
 add_executable(streamer-example
     "${PROJECT_SOURCE_DIR}/src/utils/BlockingQueue.h"
+    "${PROJECT_SOURCE_DIR}/src/utils/SafeUMap.h"
     "${PROJECT_SOURCE_DIR}/src/VideoProducer.cpp"
     "${PROJECT_SOURCE_DIR}/src/WebRTCStreamer.cpp"
     "${PROJECT_SOURCE_DIR}/src/main.cpp"
