@@ -124,3 +124,10 @@ av_opt_set(ctx->priv_data, "x264-params",
 I can also extend this example to **handle lost RTP packets and flush frames after a timeout**, which is often needed in real WebRTC networks.
 
 Do you want me to add that?
+
+
+    av_opt_set(ctx->priv_data, "x264-params", "bframes=0:sync-lookahead=0:scenecut=0:repeat-headers=1", 0);
+
+
+
+
